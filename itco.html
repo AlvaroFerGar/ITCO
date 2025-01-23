@@ -67,6 +67,17 @@
         const instructionText = document.getElementById('instruction-text');
         const loadingText = document.getElementById('loading-text'); // Referencia al texto de carga
 
+		const currentNose = {
+			position: {
+				x: 0, // Coordenada x de la nariz en este frame
+				y: 0  // Coordenada y de la nariz en este frame
+			},
+			radius: {
+				x: 0, // Radio horizontal de la elipse
+				y: 0  // Radio vertical de la elipse
+			}
+		};
+
         // Solicitar permiso para acceder a la cámara al cargar la página
         async function requestCameraPermission() {
             // Llamar a la función para cargar los modelos
@@ -117,66 +128,82 @@
         }
 
         // Función para detectar caras y landmarks en cada frame
-        async function detectFrame() {
-			console.log("frame sin model")
-			            if (true) {
-							console.log("frame con model")                // Realizar la detección de caras y landmarks en el frame actual
-                try {
-                    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
+			async function detectFrame() {
+				try {
+					const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
 
-                    // Dibujar las detecciones en el canvas
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
-                    ctx.strokeStyle = '#00FF00';
-                    ctx.lineWidth = 2;
+					// Dibujar las detecciones en el canvas
+					const ctx = canvas.getContext('2d');
+					ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
+					ctx.strokeStyle = '#00FF00';
+					ctx.lineWidth = 2;
 
-                    detections.forEach(detection => {
-                        const { x, y, width, height } = detection.detection.box;
-                        //ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
+					detections.forEach(detection => {
+						const { x, y, width, height } = detection.detection.box;
+						console.log(width + "x" + height);
+						//ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
 
-                        // Dibujar los landmarks (puntos de referencia faciales)
-                        const landmarks = detection.landmarks;
-                        ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
+						// Dibujar los landmarks (puntos de referencia faciales)
+						const landmarks = detection.landmarks;
+						ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
 
-                        landmarks.positions.forEach(position => {
-                            ctx.beginPath();
-                            ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
-                            ctx.fill();
-                        });
+						landmarks.positions.forEach(position => {
+							ctx.beginPath();
+							ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
+							ctx.fill();
+						});
 
-                        // Seleccionar y resaltar el landmark de la nariz (índices 27 a 35)
-                        const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
-                        ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
+						// Seleccionar y resaltar el landmark de la nariz (índices 27 a 35)
+						const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
+						ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
 
-                        noseIndices.forEach(index => {
-                            const noseLandmark = landmarks.positions[index];
-                            if (noseLandmark) {
-                                ctx.beginPath();
-                                // Hacer el punto de la nariz más grande (radio = 4 en lugar de 2)
-                                ctx.arc(noseLandmark.x, noseLandmark.y, 4, 0, 2 * Math.PI);
-                                ctx.fill();
-                            }
-                        });
+						noseIndices.forEach(index => {
+							const noseLandmark = landmarks.positions[index];
+							if (noseLandmark) {
+								ctx.beginPath();
+								// Hacer el punto de la nariz más grande (radio = 4 en lugar de 2)
+								ctx.arc(noseLandmark.x, noseLandmark.y, 4, 0, 2 * Math.PI);
+								ctx.fill();
+							}
+						});
 
-                        // Resaltar el punto central de la nariz (índice 30)
-                        const noseCenter = landmarks.positions[30];
-                        if (noseCenter) {
-                            ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
-                            ctx.beginPath();
-                            // Hacer el punto central de la nariz aún más grande (radio = 6)
-                            ctx.arc(noseCenter.x, noseCenter.y, 20, 0, 2 * Math.PI);
-                            ctx.fill();
-                        }
-                    });
+						// Resaltar el punto central de la nariz (índice 30)
+						const noseCenter = landmarks.positions[30];
+						if (noseCenter) {
+							ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
+							ctx.beginPath();
+							// Hacer el punto central de la nariz aún más grande (radio = 6)
+							//ctx.arc(noseCenter.x, noseCenter.y, 20, 0, 2 * Math.PI);
 
-                } catch (error) {
-                    console.error("Error al detectar caras:", error);
-                }
-            }
+							currentNose.position.x=noseCenter.x;
+							currentNose.position.y=noseCenter.y;
+							currentNose.radius.x=20 * width / 140;
+							currentNose.radius.y=20 * height / 140;
 
-            // Repetir la detección en el siguiente frame
-            requestAnimationFrame(detectFrame);
-        }
+							ctx.ellipse(currentNose.position.x, currentNose.position.y,
+										currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
+
+
+							ctx.fill();
+						}
+					});
+
+					console.log(detections)
+					
+					if(detections.length === 0)
+					{
+						ctx.ellipse(currentNose.position.x, currentNose.position.y,
+										currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
+						ctx.fill();
+					}
+
+
+				} catch (error) {
+					console.error("Error al detectar caras:", error);
+				}
+				// Repetir la detección en el siguiente frame
+				requestAnimationFrame(detectFrame);
+			}
 
         // Función para iniciar la cámara cuando se hace clic en el botón
         async function startCamera() {
