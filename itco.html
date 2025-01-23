@@ -1,71 +1,95 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detección de Caras y Landmarks</title>
-    <style>
-        body {
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #000;
-            color: white;
-            font-family: Arial, sans-serif;
-        }
-        #video {
-            max-width: 100%;
-            height: auto;
-            transform: scaleX(-1); /* Voltear la imagen para efecto espejo */
-            display: none; /* Ocultar el video inicialmente */
-        }
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            max-width: 100%;
-            height: auto;
-            transform: scaleX(-1); /* Voltear el canvas para coincidir con el video */
-        }
-        #open-camera {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #open-camera:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        #loading-text {
-            font-size: 20px;
-            margin-top: 20px;
-        }
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Is The Circus Open?</title>
+	<style>
+		body {
+			margin: 0;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			background-color: #000;
+			color: white;
+			font-family: Arial, sans-serif;
+		}
+
+		#video {
+			max-width: 100%;
+			height: auto;
+			transform: scaleX(-1);
+			/* Voltear la imagen para efecto espejo */
+			display: none;
+			/* Ocultar el video inicialmente */
+		}
+
+		#canvas {
+			position: absolute;
+			top: 0;
+			left: 0;
+			max-width: 100%;
+			height: auto;
+			transform: scaleX(-1);
+			/* Voltear el canvas para coincidir con el video */
+		}
+
+		#open-camera {
+			padding: 10px 20px;
+			font-size: 16px;
+			background-color: #007bff;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		#open-camera:disabled {
+			background-color: #ccc;
+			cursor: not-allowed;
+		}
+
+		#loading-text {
+			font-size: 20px;
+			margin-top: 20px;
+		}
+
+		#yes-text {
+			display: none;
+			/* Ocultar inicialmente */
+			font-size: 48px;
+			color: #00FF00;
+			position: absolute;
+			top: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			z-index: 10;
+		}
+	</style>
 </head>
+
 <body>
-    <h1 id="instruction-text">Haz clic para abrir la cámara</h1>
-    <button id="open-camera" disabled>Abrir cámara</button>
-    <div id="loading-text">Cargando modelo...</div>
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
+	<h1 id="instruction-text">Is the circus open?</h1>
+	<button id="open-camera" disabled>Find out</button>
+	<div id="loading-text">Loading circus...</div>
+	<h1 id="yes-text">Yes, it is!</h1>
+	<video id="video" autoplay playsinline></video>
+	<canvas id="canvas"></canvas>
 
-    <!-- Incluir face-api.js -->
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+	<!-- Incluir face-api.js -->
+	<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
-    <script>
-        let stream = null; // Almacenará la transmisión de la cámara
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const openCameraButton = document.getElementById('open-camera');
-        const instructionText = document.getElementById('instruction-text');
-        const loadingText = document.getElementById('loading-text'); // Referencia al texto de carga
+	<script>
+		let stream = null; // Almacenará la transmisión de la cámara
+		const video = document.getElementById('video');
+		const canvas = document.getElementById('canvas');
+		const openCameraButton = document.getElementById('open-camera');
+		const instructionText = document.getElementById('instruction-text');
+		const loadingText = document.getElementById('loading-text'); // Referencia al texto de carga
+		const yesText = document.getElementById('yes-text'); // Referencia al nuevo texto
 
 		const currentNose = {
 			position: {
@@ -76,182 +100,184 @@
 				x: 0, // Radio horizontal de la elipse
 				y: 0  // Radio vertical de la elipse
 			},
-			shadow_offset:0
+			shadow_offset: 0
 
 		};
 
-		const allowed_frame_gap=5;
-		let frame_gap=0;
+		const allowed_frame_gap = 5;
+		let frame_gap = 0;
 
-        // Solicitar permiso para acceder a la cámara al cargar la página
-        async function requestCameraPermission() {
-            // Llamar a la función para cargar los modelos
-            loadModels().then(() => {
-                console.log("Modelos listos para usar");
-            }).catch((error) => {
-                console.error("Error al cargar los modelos:", error);
-            });
+		// Solicitar permiso para acceder a la cámara al cargar la página
+		async function requestCameraPermission() {
+			// Llamar a la función para cargar los modelos
+			loadModels().then(() => {
+				console.log("Modelos listos para usar");
+			}).catch((error) => {
+				console.error("Error al cargar los modelos:", error);
+			});
 
-            try {
-                // Verificar si el navegador soporta getUserMedia
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('Tu navegador no soporta acceso a la cámara.');
-                }
+			try {
+				// Verificar si el navegador soporta getUserMedia
+				if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+					throw new Error('Tu navegador no soporta acceso a la cámara.');
+				}
 
-                // Solicitar permiso para acceder a la cámara
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'user' // Usar la cámara frontal (selfie)
-                    },
-                    audio: false
-                });
+				// Solicitar permiso para acceder a la cámara
+				stream = await navigator.mediaDevices.getUserMedia({
+					video: {
+						facingMode: 'user' // Usar la cámara frontal (selfie)
+					},
+					audio: false
+				});
 
-                // Habilitar el botón una vez que se obtiene el permiso
-                openCameraButton.disabled = false;
-                openCameraButton.textContent = 'Abrir cámara';
-            } catch (error) {
-                console.error('Error al solicitar permiso para la cámara:', error);
-                alert('No se pudo acceder a la cámara. Asegúrate de permitir el acceso.');
-            }
-        }
+				// Habilitar el botón una vez que se obtiene el permiso
+				openCameraButton.disabled = false;
+				openCameraButton.textContent = 'Find out!';
+			} catch (error) {
+				console.error('Error al solicitar permiso para la cámara:', error);
+				alert('No se pudo acceder a la cámara. Asegúrate de permitir el acceso.');
+			}
+		}
 
-        // Cargar los modelos de face-api.js
-        async function loadModels() {
-            console.log("Cargando modelos...");
-            try {
-                loadingText.textContent = 'Cargando modelo...'; // Mostrar texto de carga
-				console.log("a punto de cargar")
+		// Cargar los modelos de face-api.js
+		async function loadModels() {
+			console.log("Cargando modelos...");
+			try {
+				loadingText.textContent = 'Cargando modelo...'; // Mostrar texto de carga
 				await faceapi.nets.tinyFaceDetector.loadFromUri('/models'); // Cargar el modelo de detección de caras
-                await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'); // Cargar el modelo de landmarks
-                loadingText.style.display = 'none'; // Ocultar el texto de carga
-                loadingText.textContent = 'Modelos cargados';
-                console.log("Modelos cargados");
-            } catch (error) {
-                console.error('Error al cargar los modelos:', error);
-                loadingText.textContent = 'Error al cargar el modelo. Intenta recargar la página.';
-            }
-        }
+				await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'); // Cargar el modelo de landmarks
+				loadingText.style.display = 'none'; // Ocultar el texto de carga
+				loadingText.textContent = 'Modelos cargados';
+				console.log("Modelos cargados");
+			} catch (error) {
+				console.error('Error al cargar los modelos:', error);
+				loadingText.textContent = 'Error al cargar el modelo. Intenta recargar la página.';
+			}
+		}
 
-        // Función para detectar caras y landmarks en cada frame
-			async function detectFrame() {
-				try {
-					const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
+		// Función para detectar caras y landmarks en cada frame
+		async function detectFrame() {
+			try {
+				const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
 
-					// Dibujar las detecciones en el canvas
-					const ctx = canvas.getContext('2d');
-					ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
-					ctx.strokeStyle = '#00FF00';
-					ctx.lineWidth = 2;
+				// Dibujar las detecciones en el canvas
+				const ctx = canvas.getContext('2d');
+				ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
+				ctx.strokeStyle = '#00FF00';
+				ctx.lineWidth = 2;
 
-					detections.forEach(detection => {
-						const { x, y, width, height } = detection.detection.box;
-						//ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
+				detections.forEach(detection => {
+					const { x, y, width, height } = detection.detection.box;
+					//ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
 
-						// Dibujar los landmarks (puntos de referencia faciales)
-						const landmarks = detection.landmarks;
-						ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
+					// Dibujar los landmarks (puntos de referencia faciales)
+					const landmarks = detection.landmarks;
+					ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
 
-						landmarks.positions.forEach(position => {
+					landmarks.positions.forEach(position => {
+						ctx.beginPath();
+						ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
+						ctx.fill();
+					});
+
+					// Seleccionar y resaltar el landmark de la nariz (índices 27 a 35)
+					const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
+					ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
+
+					noseIndices.forEach(index => {
+						const noseLandmark = landmarks.positions[index];
+						if (noseLandmark) {
 							ctx.beginPath();
-							ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
+							// Hacer el punto de la nariz más grande (radio = 4 en lugar de 2)
+							ctx.arc(noseLandmark.x, noseLandmark.y, 2, 0, 2 * Math.PI);
 							ctx.fill();
-						});
-
-						// Seleccionar y resaltar el landmark de la nariz (índices 27 a 35)
-						const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
-						ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
-
-						noseIndices.forEach(index => {
-							const noseLandmark = landmarks.positions[index];
-							if (noseLandmark) {
-								ctx.beginPath();
-								// Hacer el punto de la nariz más grande (radio = 4 en lugar de 2)
-								ctx.arc(noseLandmark.x, noseLandmark.y, 2, 0, 2 * Math.PI);
-								ctx.fill();
-							}
-						});
-
-						// Resaltar el punto central de la nariz (índice 30)
-						const noseRightInImg =landmarks.positions[31];
-						const noseLeftInImg =landmarks.positions[35];
-						const noseCenter = landmarks.positions[33];
-
-
-						if (noseCenter) {
-							frame_gap = 0;
-							// Hacer el punto central de la nariz aún más grande (radio = 6)
-							//ctx.arc(noseCenter.x, noseCenter.y, 20, 0, 2 * Math.PI);
-
-							currentNose.position.x = noseCenter.x;
-							currentNose.position.y = noseCenter.y;
-							currentNose.radius.x = Math.abs(noseRightInImg.x - noseLeftInImg.x)
-							currentNose.radius.y = 20 * height / 140;
-							currentNose.shadow_offset = +50 + (100 * (noseCenter.x - noseRightInImg.x)) / (noseRightInImg.x - noseLeftInImg.x)
-							//console.log(currentNose.shadow_offset);
 						}
 					});
 
-					if (detections.length == 0) {
-						frame_gap++;
+					// Resaltar el punto central de la nariz (índice 30)
+					const noseRightInImg = landmarks.positions[31];
+					const noseLeftInImg = landmarks.positions[35];
+					const noseCenter = landmarks.positions[33];
+
+
+					if (noseCenter) {
+						frame_gap = 0;
+						// Hacer el punto central de la nariz aún más grande (radio = 6)
+						//ctx.arc(noseCenter.x, noseCenter.y, 20, 0, 2 * Math.PI);
+
+						currentNose.position.x = noseCenter.x;
+						currentNose.position.y = noseCenter.y;
+						currentNose.radius.x = Math.abs(noseRightInImg.x - noseLeftInImg.x)
+						currentNose.radius.y = 20 * height / 140;
+						currentNose.shadow_offset = +50 + (100 * (noseCenter.x - noseRightInImg.x)) / (noseRightInImg.x - noseLeftInImg.x)
+						//console.log(currentNose.shadow_offset);
 					}
+				});
 
-					if (frame_gap < allowed_frame_gap) {
-						ctx.beginPath();
-						ctx.fillStyle = 'rgb(0, 0, 0,0.5)'; // Cambiar color para el centro de la nariz
-						ctx.ellipse(currentNose.position.x + currentNose.shadow_offset, currentNose.position.y,
-							currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
-						ctx.fill();
-						ctx.beginPath();
-						ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
-						ctx.ellipse(currentNose.position.x, currentNose.position.y,
-							currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
-						ctx.fill();
-					}
-
-
-				} catch (error) {
-					console.error("Error al detectar caras:", error);
+				if (detections.length == 0) {
+					frame_gap++;
 				}
-				// Repetir la detección en el siguiente frame
-				requestAnimationFrame(detectFrame);
-			}
 
-        // Función para iniciar la cámara cuando se hace clic en el botón
-        async function startCamera() {
+				if (frame_gap < allowed_frame_gap) {
+					ctx.beginPath();
+					ctx.fillStyle = 'rgb(0, 0, 0,0.5)'; // Cambiar color para el centro de la nariz
+					ctx.ellipse(currentNose.position.x + currentNose.shadow_offset, currentNose.position.y,
+						currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
+					ctx.fill();
+					ctx.beginPath();
+					ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
+					ctx.ellipse(currentNose.position.x, currentNose.position.y,
+						currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
+					ctx.fill();
+
+					yesText.style.display = 'block'
+				}
+				else {
+					yesText.style.display = 'none';
+				}
+
+
+			} catch (error) {
+				console.error("Error al detectar caras:", error);
+			}
+			// Repetir la detección en el siguiente frame
+			requestAnimationFrame(detectFrame);
+		}
+
+		// Función para iniciar la cámara cuando se hace clic en el botón
+		async function startCamera() {
 			console.log("start camera")
 
-            if (stream) {
-				console.log("vamo")
-                video.srcObject = stream;
-                video.style.display = 'block'; // Mostrar el video
-                openCameraButton.style.display = 'none'; // Ocultar el botón
-                instructionText.style.display = 'none'; // Ocultar el texto
+			if (stream) {
+				video.srcObject = stream;
+				video.style.display = 'block'; // Mostrar el video
+				openCameraButton.style.display = 'none'; // Ocultar el botón
+				instructionText.style.display = 'none'; // Ocultar el texto
 
-                // Esperar a que el video esté listo
-                video.onloadedmetadata = async () => {
-                    
-											// Obtener la posición del video en la pantalla
-						const videoRect = video.getBoundingClientRect();
+				// Esperar a que el video esté listo
+				video.onloadedmetadata = async () => {
+
+					// Obtener la posición del video en la pantalla
+					const videoRect = video.getBoundingClientRect();
 
 					// Ajustar la posición del canvas para que coincida con la del video
 					canvas.style.top = `${videoRect.top}px`;
 					canvas.style.left = `${videoRect.left}px`
 					canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+					canvas.height = video.videoHeight;
 
-					console.log(canvas.style.top+" "+canvas.style.left+" "+canvas.width+" "+canvas.height);
+					// Iniciar la detección en cada frame
+					detectFrame();
+				};
+			}
+		}
 
-                    // Iniciar la detección en cada frame
-                    detectFrame();
-                };
-            }
-        }
+		// Asignar eventos
+		openCameraButton.addEventListener('click', startCamera);
 
-        // Asignar eventos
-        openCameraButton.addEventListener('click', startCamera);
-
-        // Solicitar permiso al cargar la página
-        window.onload = requestCameraPermission;
-    </script>
+		// Solicitar permiso al cargar la página
+		window.onload = requestCameraPermission;
+	</script>
 </body>
+
 </html>
