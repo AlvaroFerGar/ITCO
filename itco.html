@@ -75,8 +75,13 @@
 			radius: {
 				x: 0, // Radio horizontal de la elipse
 				y: 0  // Radio vertical de la elipse
-			}
+			},
+			shadow_offset:0
+
 		};
+
+		const allowed_frame_gap=5;
+		let frame_gap=0;
 
         // Solicitar permiso para acceder a la cámara al cargar la página
         async function requestCameraPermission() {
@@ -140,7 +145,6 @@
 
 					detections.forEach(detection => {
 						const { x, y, width, height } = detection.detection.box;
-						console.log(width + "x" + height);
 						//ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
 
 						// Dibujar los landmarks (puntos de referencia faciales)
@@ -162,38 +166,45 @@
 							if (noseLandmark) {
 								ctx.beginPath();
 								// Hacer el punto de la nariz más grande (radio = 4 en lugar de 2)
-								ctx.arc(noseLandmark.x, noseLandmark.y, 4, 0, 2 * Math.PI);
+								ctx.arc(noseLandmark.x, noseLandmark.y, 2, 0, 2 * Math.PI);
 								ctx.fill();
 							}
 						});
 
 						// Resaltar el punto central de la nariz (índice 30)
-						const noseCenter = landmarks.positions[30];
+						const noseRightInImg =landmarks.positions[31];
+						const noseLeftInImg =landmarks.positions[35];
+						const noseCenter = landmarks.positions[33];
+
+
 						if (noseCenter) {
-							ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
-							ctx.beginPath();
+							frame_gap = 0;
 							// Hacer el punto central de la nariz aún más grande (radio = 6)
 							//ctx.arc(noseCenter.x, noseCenter.y, 20, 0, 2 * Math.PI);
 
-							currentNose.position.x=noseCenter.x;
-							currentNose.position.y=noseCenter.y;
-							currentNose.radius.x=20 * width / 140;
-							currentNose.radius.y=20 * height / 140;
-
-							ctx.ellipse(currentNose.position.x, currentNose.position.y,
-										currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
-
-
-							ctx.fill();
+							currentNose.position.x = noseCenter.x;
+							currentNose.position.y = noseCenter.y;
+							currentNose.radius.x = Math.abs(noseRightInImg.x - noseLeftInImg.x)
+							currentNose.radius.y = 20 * height / 140;
+							currentNose.shadow_offset = +50 + (100 * (noseCenter.x - noseRightInImg.x)) / (noseRightInImg.x - noseLeftInImg.x)
+							//console.log(currentNose.shadow_offset);
 						}
 					});
 
-					console.log(detections)
-					
-					if(detections.length === 0)
-					{
+					if (detections.length == 0) {
+						frame_gap++;
+					}
+
+					if (frame_gap < allowed_frame_gap) {
+						ctx.beginPath();
+						ctx.fillStyle = 'rgb(0, 0, 0,0.5)'; // Cambiar color para el centro de la nariz
+						ctx.ellipse(currentNose.position.x + currentNose.shadow_offset, currentNose.position.y,
+							currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
+						ctx.fill();
+						ctx.beginPath();
+						ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
 						ctx.ellipse(currentNose.position.x, currentNose.position.y,
-										currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
+							currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
 						ctx.fill();
 					}
 
