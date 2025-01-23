@@ -144,8 +144,8 @@
 			console.log("Cargando modelos...");
 			try {
 				loadingText.textContent = 'Cargando modelo...'; // Mostrar texto de carga
-				await faceapi.nets.tinyFaceDetector.loadFromUri('/models'); // Cargar el modelo de detección de caras
-				await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'); // Cargar el modelo de landmarks
+				await faceapi.nets.tinyFaceDetector.load('models'); // Cargar el modelo de detección de caras
+				await faceapi.nets.faceLandmark68TinyNet.load('models'); // Cargar el modelo de landmarks
 				loadingText.style.display = 'none'; // Ocultar el texto de carga
 				loadingText.textContent = 'Modelos cargados';
 				console.log("Modelos cargados");
