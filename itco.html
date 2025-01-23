@@ -66,17 +66,16 @@
         const openCameraButton = document.getElementById('open-camera');
         const instructionText = document.getElementById('instruction-text');
         const loadingText = document.getElementById('loading-text'); // Referencia al texto de carga
-        let model = null; // Almacenará el modelo de detección
 
         // Solicitar permiso para acceder a la cámara al cargar la página
         async function requestCameraPermission() {
+            // Llamar a la función para cargar los modelos
+            loadModels().then(() => {
+                console.log("Modelos listos para usar");
+            }).catch((error) => {
+                console.error("Error al cargar los modelos:", error);
+            });
 
-			// Llamar a la función para cargar los modelos
-			loadModels().then(() => {
-				console.log("Modelos listos para usar");
-			}).catch((error) => {
-				console.error("Error al cargar los modelos:", error);
-			});
             try {
                 // Verificar si el navegador soporta getUserMedia
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -102,16 +101,15 @@
 
         // Cargar los modelos de face-api.js
         async function loadModels() {
-			console.log("a cargar")
+            console.log("Cargando modelos...");
             try {
                 loadingText.textContent = 'Cargando modelo...'; // Mostrar texto de carga
 				console.log("a punto de cargar")
 				await faceapi.nets.tinyFaceDetector.loadFromUri('/models'); // Cargar el modelo de detección de caras
                 await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'); // Cargar el modelo de landmarks
                 loadingText.style.display = 'none'; // Ocultar el texto de carga
-				loadingText.textContent = 'Modelos cargados';
-				console.log("cargados")
-
+                loadingText.textContent = 'Modelos cargados';
+                console.log("Modelos cargados");
             } catch (error) {
                 console.error('Error al cargar los modelos:', error);
                 loadingText.textContent = 'Error al cargar el modelo. Intenta recargar la página.';
@@ -119,73 +117,62 @@
         }
 
         // Función para detectar caras y landmarks en cada frame
-			async function detectFrame() {
-				console.log("frame sin model")
-				if (true) {
-					console.log("frame con model")
-					// Realizar la detección de caras y landmarks en el frame actual
-					try {
+        async function detectFrame() {
+			console.log("frame sin model")
+			            if (true) {
+							console.log("frame con model")                // Realizar la detección de caras y landmarks en el frame actual
+                try {
+                    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
 
-						const canvasRect = canvas.getBoundingClientRect();
-						const pre_detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
+                    // Dibujar las detecciones en el canvas
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
+                    ctx.strokeStyle = '#00FF00';
+                    ctx.lineWidth = 2;
 
-						// Dibujar las detecciones en el canvas
-						const ctx = canvas.getContext('2d');
-						ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
-						ctx.strokeStyle = '#00FF00';
-						ctx.lineWidth = 2;
+                    detections.forEach(detection => {
+                        const { x, y, width, height } = detection.detection.box;
+                        //ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
 
-						const detections = faceapi.resizeResults(pre_detections, { width: canvas.width, height: canvas.height })
+                        // Dibujar los landmarks (puntos de referencia faciales)
+                        const landmarks = detection.landmarks;
+                        ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
 
-						detections.forEach(detection => {
-							// Asegúrate de que `detection` tiene la propiedad `box`
-							if (detection && detection.box) {
-								const { x, y, width, height } = detection.box;
-								ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
-							} else {
-								console.error("Detección no válida:", detection);
-							}
-							// Dibujar los landmarks (puntos de referencia faciales)
-							if (detection && detection.landmarks) {
-								const landmarks = detection.landmarks;
-								ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
+                        landmarks.positions.forEach(position => {
+                            ctx.beginPath();
+                            ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
+                            ctx.fill();
+                        });
 
-								landmarks.positions.forEach(position => {
-									ctx.beginPath();
-									ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
-									ctx.fill();
-								});
+                        // Seleccionar y resaltar el landmark de la nariz (índices 27 a 35)
+                        const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
+                        ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
 
-								// Seleccionar y resaltar el landmark de la nariz (índices 27 a 35)
-								const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
-								ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
+                        noseIndices.forEach(index => {
+                            const noseLandmark = landmarks.positions[index];
+                            if (noseLandmark) {
+                                ctx.beginPath();
+                                // Hacer el punto de la nariz más grande (radio = 4 en lugar de 2)
+                                ctx.arc(noseLandmark.x, noseLandmark.y, 4, 0, 2 * Math.PI);
+                                ctx.fill();
+                            }
+                        });
 
-								noseIndices.forEach(index => {
-									const noseLandmark = landmarks.positions[index];
-									if (noseLandmark) {
-										ctx.beginPath();
-										// Hacer el punto de la nariz más grande (radio = 4 en lugar de 2)
-										ctx.arc(noseLandmark.x, noseLandmark.y, 4, 0, 2 * Math.PI);
-										ctx.fill();
-									}
-								});
+                        // Resaltar el punto central de la nariz (índice 30)
+                        const noseCenter = landmarks.positions[30];
+                        if (noseCenter) {
+                            ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
+                            ctx.beginPath();
+                            // Hacer el punto central de la nariz aún más grande (radio = 6)
+                            ctx.arc(noseCenter.x, noseCenter.y, 20, 0, 2 * Math.PI);
+                            ctx.fill();
+                        }
+                    });
 
-								// Resaltar el punto central de la nariz (índice 30)
-								const noseCenter = landmarks.positions[30];
-								if (noseCenter) {
-									ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
-									ctx.beginPath();
-									// Hacer el punto central de la nariz aún más grande (radio = 6)
-									ctx.arc(noseCenter.x, noseCenter.y, 20, 0, 2 * Math.PI);
-									ctx.fill();
-								}
-							}
-						});
-
-					} catch (error) {
-						console.error("Error al detectar caras:", error);
-					}
-				}
+                } catch (error) {
+                    console.error("Error al detectar caras:", error);
+                }
+            }
 
             // Repetir la detección en el siguiente frame
             requestAnimationFrame(detectFrame);
@@ -194,10 +181,9 @@
         // Función para iniciar la cámara cuando se hace clic en el botón
         async function startCamera() {
 			console.log("start camera")
-			//await loadModels();
+
             if (stream) {
 				console.log("vamo")
-
                 video.srcObject = stream;
                 video.style.display = 'block'; // Mostrar el video
                 openCameraButton.style.display = 'none'; // Ocultar el botón
@@ -205,12 +191,17 @@
 
                 // Esperar a que el video esté listo
                 video.onloadedmetadata = async () => {
-					canvas.top
-                    canvas.width = video.videoWidth;
+                    
+											// Obtener la posición del video en la pantalla
+						const videoRect = video.getBoundingClientRect();
+
+					// Ajustar la posición del canvas para que coincida con la del video
+					canvas.style.top = `${videoRect.top}px`;
+					canvas.style.left = `${videoRect.left}px`
+					canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
 
-                    // Cargar los modelos de face-api.js
-                    //await loadModels();
+					console.log(canvas.style.top+" "+canvas.style.left+" "+canvas.width+" "+canvas.height);
 
                     // Iniciar la detección en cada frame
                     detectFrame();
