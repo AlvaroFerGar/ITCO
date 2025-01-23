@@ -1,103 +1,94 @@
 <!DOCTYPE html>
-<html lang="en">
-	<head>
-		<title>ITCO?</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-		<link type="text/css" rel="stylesheet" href="main.css">
-	</head>
-	<body>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cámara Selfie con Botón</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #video {
+            max-width: 100%;
+            height: auto;
+            transform: scaleX(-1); /* Voltear la imagen para efecto espejo */
+            display: none; /* Ocultar el video inicialmente */
+            margin-top: 20px;
+        }
+        #open-camera {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #open-camera:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="instruction-text">Haz clic para abrir la cámara</h1>
+    <button id="open-camera" disabled>Abrir cámara</button>
+    <video id="video" autoplay playsinline></video>
 
-		<div id="info">
-			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> Is The Circus Open?<br/>(Chroome Android 81+)
-		</div>
+    <script>
+        let stream = null; // Almacenará la transmisión de la cámara
+        const video = document.getElementById('video');
+        const openCameraButton = document.getElementById('open-camera');
+        const instructionText = document.getElementById('instruction-text'); // Referencia al texto
 
-		<script type="importmap">
-			{
-			  "imports": {
-				"three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js",
-				"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"
-			  }
-			}
-		  </script>
+        // Solicitar permiso para acceder a la cámara al cargar la página
+        async function requestCameraPermission() {
+            try {
+                // Verificar si el navegador soporta getUserMedia
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Tu navegador no soporta acceso a la cámara.');
+                }
 
-		<script type="module">
+                // Solicitar permiso para acceder a la cámara
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user' // Usar la cámara frontal (selfie)
+                    },
+                    audio: false
+                });
 
-			import * as THREE from 'three';
-			import { ARButton } from 'three/addons/webxr/ARButton.js';
+                // Habilitar el botón una vez que se obtiene el permiso
+                openCameraButton.disabled = false;
+                openCameraButton.textContent = 'Abrir cámara';
+            } catch (error) {
+                console.error('Error al solicitar permiso para la cámara:', error);
+                alert('No se pudo acceder a la cámara. Asegúrate de permitir el acceso.');
+            }
+        }
 
-			let camera, scene, renderer;
-			let controller;
+        // Función para iniciar la cámara cuando se hace clic en el botón
+        function startCamera() {
+            if (stream) {
+                video.srcObject = stream;
+                video.style.display = 'block'; // Mostrar el video
+                openCameraButton.style.display = 'none'; // Ocultar el botón
+                instructionText.style.display = 'none'; // Ocultar el texto
+            }
+        }
 
-			init();
+        // Asignar eventos
+        openCameraButton.addEventListener('click', startCamera);
 
-			function init() {
-
-				const container = document.createElement( 'div' );
-				document.body.appendChild( container );
-
-				scene = new THREE.Scene();
-
-				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 20 );
-
-				const light = new THREE.HemisphereLight( 0xffffff, 0xbbbbff, 3 );
-				light.position.set( 0.5, 1, 0.25 );
-				scene.add( light );
-
-				//
-
-				renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				renderer.setAnimationLoop( animate );
-				renderer.xr.enabled = true;
-				container.appendChild( renderer.domElement );
-
-				//
-
-				document.body.appendChild( ARButton.createButton( renderer ) );
-
-				//
-
-				const geometry = new THREE.CylinderGeometry( 0, 0.05, 0.2, 32 ).rotateX( Math.PI / 2 );
-
-				function onSelect() {
-
-					const material = new THREE.MeshPhongMaterial( { color: 0xffffff * Math.random() } );
-					const mesh = new THREE.Mesh( geometry, material );
-					mesh.position.set( 0, 0, - 0.3 ).applyMatrix4( controller.matrixWorld );
-					mesh.quaternion.setFromRotationMatrix( controller.matrixWorld );
-					scene.add( mesh );
-
-				}
-
-				controller = renderer.xr.getController( 0 );
-				controller.addEventListener( 'select', onSelect );
-				scene.add( controller );
-
-				//
-
-				window.addEventListener( 'resize', onWindowResize );
-
-			}
-
-			function onWindowResize() {
-
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-
-				renderer.setSize( window.innerWidth, window.innerHeight );
-
-			}
-
-			//
-
-			function animate() {
-
-				renderer.render( scene, camera );
-
-			}
-
-		</script>
-	</body>
+        // Solicitar permiso al cargar la página
+        window.onload = requestCameraPermission;
+    </script>
+</body>
 </html>
