@@ -155,6 +155,12 @@
 			}
 		}
 
+
+		//Debug variables to activate more drawing elements.
+		const drawFaceBox = false;
+		const drawLandmarks = false;
+		const drawNoseExtras = false;
+		
 		// Función para detectar caras y landmarks en cada frame
 		async function detectFrame() {
 			try {
@@ -166,38 +172,46 @@
 				ctx.strokeStyle = '#00FF00';
 				ctx.lineWidth = 2;
 
+				
 				detections.forEach(detection => {
-					const { x, y, width, height } = detection.detection.box;
-					//ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
+					const { x, y, width, height } = detection.detection.box;	
 
+					if(drawFaceBox)
+					{
+						ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
+					}
 					// Dibujar los landmarks (puntos de referencia faciales)
 					const landmarks = detection.landmarks;
-					ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
-
-					landmarks.positions.forEach(position => {
-						ctx.beginPath();
-						ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
-						ctx.fill();
-					});
-
-					// Seleccionar y resaltar el landmark de la nariz (índices 27 a 35)
-					const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
-					ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
-
-					noseIndices.forEach(index => {
-						const noseLandmark = landmarks.positions[index];
-						if (noseLandmark) {
+					
+					if(drawLandmarks)
+					{
+						ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
+						landmarks.positions.forEach(position => {
 							ctx.beginPath();
-							// Hacer el punto de la nariz más grande (radio = 4 en lugar de 2)
-							ctx.arc(noseLandmark.x, noseLandmark.y, 2, 0, 2 * Math.PI);
+							ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
 							ctx.fill();
-						}
-					});
+						});
+					}
+
+					if(drawNoseExtras)
+					{
+						const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
+						ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
+						noseIndices.forEach(index => {
+							const noseLandmark = landmarks.positions[index];
+							if (noseLandmark) {
+								ctx.beginPath();
+								ctx.arc(noseLandmark.x, noseLandmark.y, 2, 0, 2 * Math.PI);
+								ctx.fill();
+							}
+						});
+					}
+
 
 					// Resaltar el punto central de la nariz (índice 30)
 					const noseRightInImg = landmarks.positions[31];
 					const noseLeftInImg = landmarks.positions[35];
-					const noseCenter = landmarks.positions[33];
+					const noseCenter = landmarks.positions[30];
 
 
 					if (noseCenter) {
@@ -220,7 +234,7 @@
 
 				if (frame_gap < allowed_frame_gap) {
 					ctx.beginPath();
-					ctx.fillStyle = 'rgb(0, 0, 0,0.5)'; // Cambiar color para el centro de la nariz
+					ctx.fillStyle = 'rgb(0, 0, 0,0.25)'; // Cambiar color para el centro de la nariz
 					ctx.ellipse(currentNose.position.x + currentNose.shadow_offset, currentNose.position.y,
 						currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
 					ctx.fill();
