@@ -22,9 +22,9 @@
 			max-width: 100%;
 			height: auto;
 			transform: scaleX(-1);
-			/* Voltear la imagen para efecto espejo */
+			/* Flip the image for a mirror effect */
 			display: none;
-			/* Ocultar el video inicialmente */
+			/* Hide the video initially */
 		}
 
 		#canvas {
@@ -34,7 +34,7 @@
 			max-width: 100%;
 			height: auto;
 			transform: scaleX(-1);
-			/* Voltear el canvas para coincidir con el video */
+			/* Flip the canvas to match the video */
 		}
 
 		#open-camera {
@@ -59,7 +59,7 @@
 
 		#yes-text {
 			display: none;
-			/* Ocultar inicialmente */
+			/* Hide initially */
 			font-size: 48px;
 			color: #00FF00;
 			position: absolute;
@@ -83,7 +83,7 @@
 	<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
 	<script>
-		let stream = null; // Almacenará la transmisión de la cámara
+		let stream = null; // Will store the camera stream
 		
 		const video = document.getElementById('video');
 		const canvas = document.getElementById('canvas');
@@ -94,12 +94,12 @@
 
 		const currentNose = {
 			position: {
-				x: 0, // Coordenada x de la nariz en este frame
-				y: 0  // Coordenada y de la nariz en este frame
+				x: 0, // Nose x-coordinate in this frame
+				y: 0  // Nose y-coordinate in this frame
 			},
 			radius: {
-				x: 0, // Radio horizontal de la elipse
-				y: 0  // Radio vertical de la elipse
+				x: 0, // Horizontal radius of the ellipse
+				y: 0  // Vertical radius of the ellipse
 			},
 			shadow_offset: 0
 
@@ -108,13 +108,13 @@
 		const allowed_frame_gap = 5;
 		let frame_gap = 0;
 
-		// Solicitar permiso para acceder a la cámara al cargar la página
+		// Request permission to access the camera when the page loads
 		async function requestCameraPermission() {
-			// Llamar a la función para cargar los modelos
+			// Call the function to load the models
 			loadModels().then(() => {
-				console.log("Modelos listos para usar");
+				console.log("Models ready to use");
 			}).catch((error) => {
-				console.error("Error al cargar los modelos:", error);
+				console.error("Error loading models:", error);
 			});
 
 			try {
@@ -135,41 +135,41 @@
 				openCameraButton.disabled = false;
 				openCameraButton.textContent = 'Find out!';
 			} catch (error) {
-				console.error('Error al solicitar permiso para la cámara:', error);
-				alert('No se pudo acceder a la cámara. Asegúrate de permitir el acceso.');
+				console.error('Error requesting camera permission:', error);
+				alert('Could not access the camera. Make sure to allow access.');
 			}
 		}
 
-		// Cargar los modelos de face-api.js
+		// Load face-api.js models
 		async function loadModels() {
-			console.log("Cargando modelos...");
+			console.log("Loading models...");
 			try {
-				loadingText.textContent = 'Loading circus...'; // Mostrar texto de carga
-				await faceapi.nets.tinyFaceDetector.load('models'); // Cargar el modelo de detección de caras
-				await faceapi.nets.faceLandmark68TinyNet.load('models'); // Cargar el modelo de landmarks
-				loadingText.style.display = 'none'; // Ocultar el texto de carga
-				loadingText.textContent = 'Modelos cargados';
-				console.log("Modelos cargados");
+				loadingText.textContent = 'Loading circus...'; // Show loading text
+				await faceapi.nets.tinyFaceDetector.load('models'); // Load the face detection model
+				await faceapi.nets.faceLandmark68TinyNet.load('models'); // Load the landmarks model
+				loadingText.style.display = 'none'; // Hide the loading text
+				loadingText.textContent = 'Models loaded';
+				console.log("Models loaded");
 			} catch (error) {
-				console.error('Error al cargar los modelos:', error);
-				loadingText.textContent = 'Error al cargar el modelo. Intenta recargar la página.';
+				console.error('Error loading models:', error);
+				loadingText.textContent = 'Error loading the model. Try reloading the page.';
 			}
 		}
 
 
-		//Debug variables to activate more drawing elements.
+		// Debug variables to activate more drawing elements.
 		const drawFaceBox = false;
 		const drawLandmarks = false;
 		const drawNoseExtras = false;
 		
-		// Función para detectar caras y landmarks en cada frame
+		// Function to detect faces and landmarks in each frame
 		async function detectFrame() {
 			try {
 				const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
 
-				// Dibujar las detecciones en el canvas
+				// Draw detections on the canvas
 				const ctx = canvas.getContext('2d');
-				ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
+				ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 				ctx.strokeStyle = '#00FF00';
 				ctx.lineWidth = 2;
 
@@ -179,25 +179,25 @@
 
 					if(drawFaceBox)
 					{
-						ctx.strokeRect(x, y, width, height); // Dibujar un rectángulo alrededor de la cara
+						ctx.strokeRect(x, y, width, height); // Draw a rectangle around the face
 					}
-					// Dibujar los landmarks (puntos de referencia faciales)
+					// Draw landmarks (facial reference points)
 					const landmarks = detection.landmarks;
 					
 					if(drawLandmarks)
 					{
-						ctx.fillStyle = '#FFFFFF'; // Color para los landmarks
+						ctx.fillStyle = '#FFFFFF'; // Color for landmarks
 						landmarks.positions.forEach(position => {
 							ctx.beginPath();
-							ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Dibujar un círculo en cada landmark
+							ctx.arc(position.x, position.y, 2, 0, 2 * Math.PI); // Draw a circle at each landmark
 							ctx.fill();
 						});
 					}
 
 					if(drawNoseExtras)
 					{
-						const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Índices de la nariz
-						ctx.fillStyle = '#FFFFFF'; // Cambiar color para la nariz
+						const noseIndices = [27, 28, 29, 30, 31, 32, 33, 34, 35]; // Nose indices
+						ctx.fillStyle = '#FFFFFF'; // Change color for the nose
 						noseIndices.forEach(index => {
 							const noseLandmark = landmarks.positions[index];
 							if (noseLandmark) {
@@ -209,7 +209,7 @@
 					}
 
 
-					// Resaltar el punto central de la nariz (índice 30)
+					// Highlight the center point of the nose (index 30)
 					const noseRightInImg = landmarks.positions[31];
 					const noseLeftInImg = landmarks.positions[35];
 					const noseCenter = landmarks.positions[30];
@@ -217,9 +217,6 @@
 
 					if (noseCenter) {
 						frame_gap = 0;
-						// Hacer el punto central de la nariz aún más grande (radio = 6)
-						//ctx.arc(noseCenter.x, noseCenter.y, 20, 0, 2 * Math.PI);
-
 						currentNose.position.x = noseCenter.x;
 						currentNose.position.y = noseCenter.y;
 						currentNose.radius.x = Math.abs(noseRightInImg.x - noseLeftInImg.x)
@@ -237,7 +234,7 @@
 
 					//Add shadow
 					ctx.beginPath();
-					ctx.fillStyle = 'rgb(0, 0, 0,0.25)'; // Cambiar color para el centro de la nariz
+					ctx.fillStyle = 'rgb(0, 0, 0,0.25)';
 					ctx.ellipse(currentNose.position.x + currentNose.shadow_offset, currentNose.position.y,
 						currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
 					ctx.fill();
@@ -245,8 +242,8 @@
 
 					//Create gradient
 					let gradient = ctx.createRadialGradient(
-					currentNose.position.x, currentNose.position.y, 0, // Coordenadas y radio del círculo interior
-					currentNose.position.x, currentNose.position.y, currentNose.radius.x // Coordenadas y radio del círculo exterior
+					currentNose.position.x, currentNose.position.y, 0, // Coordinates and radius of the inner circle
+					currentNose.position.x, currentNose.position.y, currentNose.radius.x // Coordinates and radius of the outer circle
 					);
 					gradient.addColorStop(0, '#FF0000'); 
 					gradient.addColorStop(0.5, '#FF0000')
@@ -269,42 +266,42 @@
 			} catch (error) {
 				console.error("Error detecting faces:", error);
 			}
-			// Repetir la detección en el siguiente frame
+			// Repeat detection in the next frame
 			requestAnimationFrame(detectFrame);
 		}
 
-		// Función para iniciar la cámara cuando se hace clic en el botón
+		// Function to start the camera when the button is clicked
 		async function startCamera() {
 			console.log("start camera")
 
 			if (stream) {
 				video.srcObject = stream;
-				video.style.display = 'block'; // Mostrar el video
-				openCameraButton.style.display = 'none'; // Ocultar el botón
-				instructionText.style.display = 'none'; // Ocultar el texto
+				video.style.display = 'block'; // Show the video
+				openCameraButton.style.display = 'none'; // Hide the button
+				instructionText.style.display = 'none'; // Hide the text
 
-				// Esperar a que el video esté listo
+				// Wait for the video to be ready
 				video.onloadedmetadata = async () => {
 
-					// Obtener la posición del video en la pantalla
+					// Get the video's position on the screen
 					const videoRect = video.getBoundingClientRect();
 
-					// Ajustar la posición del canvas para que coincida con la del video
+					// Adjust the canvas position to match the video
 					canvas.style.top = `${videoRect.top}px`;
 					canvas.style.left = `${videoRect.left}px`
 					canvas.width = video.videoWidth;
 					canvas.height = video.videoHeight;
 
-					// Iniciar la detección en cada frame
+					// Start detection in each frame
 					detectFrame();
 				};
 			}
 		}
 
-		// Asignar eventos
+		// Assign events
 		openCameraButton.addEventListener('click', startCamera);
 
-		// Solicitar permiso al cargar la página
+		// Request permission when the page loads
 		window.onload = requestCameraPermission;
 	</script>
 </body>
