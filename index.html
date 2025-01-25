@@ -106,7 +106,7 @@
 
 		};
 
-		const allowed_frame_gap = 5;
+		const allowed_frame_gap = 15;
 		let frame_gap = 0;
 
 		// Request permission to access the camera when the page loads
@@ -153,7 +153,7 @@
 				console.log("Models loaded");
 			} catch (error) {
 				console.error('Error loading models:', error);
-				loadingText.textContent = 'Error loading the model. Try reloading the page.';
+				loadingText.textContent = 'Error loading circus. Try reloading the page.Remember you have to use a mobile phone.';
 			}
 		}
 
@@ -243,8 +243,8 @@
 
 					//Create gradient
 					let gradient = ctx.createRadialGradient(
-					currentNose.position.x, currentNose.position.y, 0, // Coordinates and radius of the inner circle
-					currentNose.position.x, currentNose.position.y, currentNose.radius.x // Coordinates and radius of the outer circle
+					currentNose.position.x - currentNose.shadow_offset,	currentNose.position.y, 0, // Coordinates and radius of the inner circle
+					currentNose.position.x, currentNose.position.y,		currentNose.radius.x // Coordinates and radius of the outer circle
 					);
 					gradient.addColorStop(0, '#FF0000'); 
 					gradient.addColorStop(0.5, '#FF0000')
