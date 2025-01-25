@@ -5,6 +5,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Is The Circus Open?</title>
+	<link rel="icon" href="assets/logo.ico" type="image/x-icon">
 	<style>
 		body {
 			margin: 0;
@@ -109,7 +110,7 @@
 		let frame_gap = 0;
 
 		// Request permission to access the camera when the page loads
-		async function requestCameraPermission() {
+		async function loadModelAndCameraPermission() {
 			// Call the function to load the models
 			loadModels().then(() => {
 				console.log("Models ready to use");
@@ -302,7 +303,7 @@
 		openCameraButton.addEventListener('click', startCamera);
 
 		// Request permission when the page loads
-		window.onload = requestCameraPermission;
+		window.onload = loadModelAndCameraPermission;
 	</script>
 </body>
 
