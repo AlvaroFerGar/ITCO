@@ -79,17 +79,18 @@
 	<video id="video" autoplay playsinline></video>
 	<canvas id="canvas"></canvas>
 
-	<!-- Incluir face-api.js -->
+	<!-- face-api.js -->
 	<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
 	<script>
 		let stream = null; // Almacenará la transmisión de la cámara
+		
 		const video = document.getElementById('video');
 		const canvas = document.getElementById('canvas');
 		const openCameraButton = document.getElementById('open-camera');
 		const instructionText = document.getElementById('instruction-text');
-		const loadingText = document.getElementById('loading-text'); // Referencia al texto de carga
-		const yesText = document.getElementById('yes-text'); // Referencia al nuevo texto
+		const loadingText = document.getElementById('loading-text');
+		const yesText = document.getElementById('yes-text');
 
 		const currentNose = {
 			position: {
@@ -117,20 +118,20 @@
 			});
 
 			try {
-				// Verificar si el navegador soporta getUserMedia
+				// Check if the browser supports getUserMedia
 				if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-					throw new Error('Tu navegador no soporta acceso a la cámara.');
+					throw new Error('Your browser does not support camera access.');
 				}
 
-				// Solicitar permiso para acceder a la cámara
+				// Request permission to access the camera
 				stream = await navigator.mediaDevices.getUserMedia({
 					video: {
-						facingMode: 'user' // Usar la cámara frontal (selfie)
+						facingMode: 'user' // Use the selfie camera
 					},
 					audio: false
 				});
 
-				// Habilitar el botón una vez que se obtiene el permiso
+				// Enable the button once permission is granted
 				openCameraButton.disabled = false;
 				openCameraButton.textContent = 'Find out!';
 			} catch (error) {
@@ -143,7 +144,7 @@
 		async function loadModels() {
 			console.log("Cargando modelos...");
 			try {
-				loadingText.textContent = 'Cargando modelo...'; // Mostrar texto de carga
+				loadingText.textContent = 'Loading circus...'; // Mostrar texto de carga
 				await faceapi.nets.tinyFaceDetector.load('models'); // Cargar el modelo de detección de caras
 				await faceapi.nets.faceLandmark68TinyNet.load('models'); // Cargar el modelo de landmarks
 				loadingText.style.display = 'none'; // Ocultar el texto de carga
@@ -233,13 +234,27 @@
 				}
 
 				if (frame_gap < allowed_frame_gap) {
+
+					//Add shadow
 					ctx.beginPath();
 					ctx.fillStyle = 'rgb(0, 0, 0,0.25)'; // Cambiar color para el centro de la nariz
 					ctx.ellipse(currentNose.position.x + currentNose.shadow_offset, currentNose.position.y,
 						currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
 					ctx.fill();
+
+
+					//Create gradient
+					let gradient = ctx.createRadialGradient(
+					currentNose.position.x, currentNose.position.y, 0, // Coordenadas y radio del círculo interior
+					currentNose.position.x, currentNose.position.y, currentNose.radius.x // Coordenadas y radio del círculo exterior
+					);
+					gradient.addColorStop(0, '#FF0000'); 
+					gradient.addColorStop(0.5, '#FF0000')
+					gradient.addColorStop(1, '#9e3747'); 
+
+					//Add nose
 					ctx.beginPath();
-					ctx.fillStyle = '#FF0000'; // Cambiar color para el centro de la nariz
+					ctx.fillStyle = gradient;
 					ctx.ellipse(currentNose.position.x, currentNose.position.y,
 						currentNose.radius.x, currentNose.radius.y, 0, 0, 2 * Math.PI);
 					ctx.fill();
@@ -252,7 +267,7 @@
 
 
 			} catch (error) {
-				console.error("Error al detectar caras:", error);
+				console.error("Error detecting faces:", error);
 			}
 			// Repetir la detección en el siguiente frame
 			requestAnimationFrame(detectFrame);
